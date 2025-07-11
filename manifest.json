@@ -1,0 +1,23 @@
+{
+  "short_name": "Kazi Flow",
+  "name": "Kazi Flow",
+  "description": "Kazi Flow is a centralized command center for professional teams, designed to eliminate procrastination, streamline workflows, and foster creativity through an integrated suite of productivity tools.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0a777b",
+  "background_color": "#1a1a1a"
+}
