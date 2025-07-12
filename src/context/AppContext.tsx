@@ -2,7 +2,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Page, User, Notification, Project, Client, CalendarEvent, MoodboardItem, FooterSettings, SocialLink, ContentCalendarEntry, CollaborationSpace, SentEmail } from '../types';
 import { auth, db } from '../services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 
 type Theme = 'light' | 'dark';
@@ -92,7 +91,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [activeMoodboardProjectId, setActiveMoodboardProjectId] = useState<string | null>(null);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
             if (firebaseUser) {
                 // User is signed in, now get their profile from Firestore
                 const userDocRef = doc(db, 'users', firebaseUser.uid);
