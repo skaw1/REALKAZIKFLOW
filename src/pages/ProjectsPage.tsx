@@ -116,8 +116,8 @@ const ShareProject: React.FC<{
                 permission: project.sharing?.permission || 'view',
             };
         } else {
-            sharingUpdate = {
-                ...project.sharing!,
+             sharingUpdate = {
+                ...(project.sharing || { linkId: crypto.randomUUID(), permission: 'view' }),
                 isEnabled: false,
             };
         }
@@ -425,7 +425,7 @@ const ProjectCard: React.FC<{ project: Project; onViewDetails: () => void; }> = 
 
 const AddProjectModal: React.FC<{ 
     onClose: () => void; 
-    onSave: (project: Omit<Project, 'id' | 'completion' | 'team' | 'ownerId' | 'tasks' | 'notes' | 'urls' | 'moodboardItems' | 'trashedMoodboardItems'>, clientId?: string) => void;
+    onSave: (project: Omit<Project, 'id' | 'completion' | 'team' | 'ownerId' | 'tasks' | 'notes' | 'urls' | 'moodboardItems' | 'trashedMoodboardItems' | 'sharing'>, clientId?: string) => void;
     initialClientId?: string;
 }> = ({ onClose, onSave, initialClientId }) => {
     const [name, setName] = useState('');
@@ -516,7 +516,7 @@ const AddProjectModal: React.FC<{
 
 
 const ProjectsPage: React.FC = () => {
-    const { user, users, projects, setSentEmails, initialSelectedProjectId, setInitialSelectedProjectId, triggerProjectCreationForClientId, setTriggerProjectCreationForClientId } = useAppContext();
+    const { user, users, projects, setProjects, setSentEmails, initialSelectedProjectId, setInitialSelectedProjectId, triggerProjectCreationForClientId, setTriggerProjectCreationForClientId } = useAppContext();
     const [isModalOpen, setModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('completion-desc');
@@ -543,9 +543,9 @@ const ProjectsPage: React.FC = () => {
     }, [triggerProjectCreationForClientId, setTriggerProjectCreationForClientId]);
 
 
-    const handleSaveProject = async (newProjectData: Omit<Project, 'id' | 'completion' | 'team' | 'ownerId' | 'tasks' | 'notes' | 'urls' | 'moodboardItems' | 'trashedMoodboardItems'>, clientId?: string) => {
+    const handleSaveProject = async (newProjectData: Omit<Project, 'id' | 'completion' | 'team' | 'ownerId' | 'tasks' | 'notes' | 'urls' | 'moodboardItems' | 'trashedMoodboardItems' | 'sharing'>, clientId?: string) => {
         if (!user) return;
-        const newProject: Omit<Project, 'id'> = {
+        const projectDataForFirestore: Omit<Project, 'id'> = {
             ...newProjectData,
             completion: 0,
             ownerId: user.id,
@@ -556,8 +556,24 @@ const ProjectsPage: React.FC = () => {
             clientId: clientId,
             moodboardItems: [],
             trashedMoodboardItems: [],
+            sharing: {
+                isEnabled: false,
+                linkId: crypto.randomUUID(),
+                permission: 'view',
+            },
         };
-        await addDoc(collection(db, 'projects'), newProject);
+
+        try {
+            const docRef = await addDoc(collection(db, 'projects'), projectDataForFirestore);
+            const newProjectForState: Project = {
+                id: docRef.id,
+                ...projectDataForFirestore,
+            };
+            setProjects(prevProjects => [...prevProjects, newProjectForState]);
+        } catch (error) {
+            console.error("Error adding project:", error);
+            alert("Failed to save project. Please check your connection and try again.");
+        }
     };
     
     const handleUpdateProject = useCallback(async (projectId: string, updates: Partial<Project>) => {
@@ -566,7 +582,6 @@ const ProjectsPage: React.FC = () => {
 
         let finalUpdates = { ...updates };
 
-        // If tasks are being updated, recalculate completion
         if(updates.tasks) {
             const totalTasks = updates.tasks.length;
             const completedTasks = updates.tasks.filter(t => t.completed).length;
@@ -595,14 +610,23 @@ const ProjectsPage: React.FC = () => {
             }
         }
         
-        const projectDocRef = doc(db, 'projects', projectId);
-        await updateDoc(projectDocRef, finalUpdates);
-        
-        if(selectedProject?.id === projectId){
-            setSelectedProject(prev => prev ? {...prev, ...finalUpdates} : null);
+        try {
+            const projectDocRef = doc(db, 'projects', projectId);
+            await updateDoc(projectDocRef, finalUpdates);
+
+            setProjects(prevProjects => prevProjects.map(p =>
+                p.id === projectId ? { ...p, ...finalUpdates } as Project : p
+            ));
+            
+            if(selectedProject?.id === projectId){
+                setSelectedProject(prev => prev ? {...prev, ...finalUpdates} as Project : null);
+            }
+        } catch (error) {
+            console.error("Error updating project:", error);
+            alert("Failed to update project. Please check your connection and try again.");
         }
 
-    }, [projects, users, setSentEmails, selectedProject]);
+    }, [projects, users, setSentEmails, selectedProject, setProjects]);
 
 
     const displayedProjects = useMemo(() => {
