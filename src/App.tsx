@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useCallback, useState } from 'react';
 import { AppProvider, useAppContext, useTheme } from './context/AppContext';
 import { LoginPage } from './pages/LoginPage';
@@ -8,7 +6,8 @@ import { SentEmail, User } from './types';
 import SharedProjectPage from './pages/SharedProjectPage';
 import WelcomePage from './pages/WelcomePage';
 import { generateLoginAlertEmail } from './services/geminiService';
-import { auth, db } from './services/firebase';
+import { auth, db } from './services/firebase'; // Assuming './services/firebase' is your Firebase init file
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth'; // <-- ADD THIS IMPORT
 
 const hexToHslString = (hex: string): string => {
     hex = hex.replace('#', '');
@@ -75,7 +74,8 @@ const AppContent: React.FC = () => {
 
     const handleLogin = useCallback(async (email: string, password: string): Promise<boolean> => {
         try {
-            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            // CORRECTED: Use modular signInWithEmailAndPassword
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const loggedInUser = userCredential.user;
 
             if (loggedInUser) {
