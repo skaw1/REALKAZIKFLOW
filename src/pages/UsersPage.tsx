@@ -1,8 +1,8 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { User, UserCategory } from '../types';
 import { TrashIcon } from '../constants';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../services/firebase';
 import { doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
@@ -147,8 +147,10 @@ const UsersPage: React.FC = () => {
         
         if(isNew) {
              try {
-                const userCredential = await createUserWithEmailAndPassword(auth, data.email!, data.password!);
+                const userCredential = await auth.createUserWithEmailAndPassword(data.email!, data.password!);
                 const newUserFromAuth = userCredential.user;
+                if (!newUserFromAuth) throw new Error("User creation failed in Firebase Auth.");
+
                 const newUserProfile: User = {
                     id: newUserFromAuth.uid,
                     name: data.name!,
