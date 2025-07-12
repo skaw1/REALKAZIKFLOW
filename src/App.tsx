@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useState } from 'react';
 import { AppProvider, useAppContext, useTheme } from './context/AppContext';
 import { LoginPage } from './pages/LoginPage';
@@ -7,7 +8,6 @@ import SharedProjectPage from './pages/SharedProjectPage';
 import WelcomePage from './pages/WelcomePage';
 import { generateLoginAlertEmail } from './services/geminiService';
 import { auth } from './services/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from './services/firebase';
 
@@ -76,7 +76,7 @@ const AppContent: React.FC = () => {
 
     const handleLogin = useCallback(async (email: string, password: string): Promise<boolean> => {
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
             const loggedInUser = userCredential.user;
 
             if (loggedInUser) {
