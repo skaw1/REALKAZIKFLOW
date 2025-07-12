@@ -1,10 +1,10 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { User, UserCategory } from '../types';
 import { TrashIcon } from '../constants';
 import { auth, db } from '../services/firebase';
-import { doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 const allCategoryOptions: UserCategory[] = ['Primary Admin', 'Temporary Admin', 'Team Member', 'Brand', 'Business', 'Client'];
 
@@ -165,7 +165,7 @@ const UsersPage: React.FC = () => {
                         notificationEmail: data.email!,
                     },
                 };
-                await setDoc(doc(db, "users", newUserFromAuth.uid), newUserProfile);
+                await db.collection("users").doc(newUserFromAuth.uid).set(newUserProfile);
             } catch (error: any) {
                 console.error("Error creating user:", error);
                 alert(`Error: ${error.message}`);
@@ -176,12 +176,12 @@ const UsersPage: React.FC = () => {
                 alert('Error: Cannot demote the last Primary Admin.');
                 return;
             }
-            const userDocRef = doc(db, "users", data.id!);
+            const userDocRef = db.collection("users").doc(data.id!);
             const { id, ...updateData } = data;
             if(!updateData.password) {
                 delete updateData.password;
             }
-            await updateDoc(userDocRef, updateData);
+            await userDocRef.update(updateData);
             // NOTE: Password changes would require re-authentication or a backend function.
         }
     };
@@ -195,7 +195,7 @@ const UsersPage: React.FC = () => {
         if (deletingUser) {
             try {
                 // Deleting user profile from Firestore
-                await deleteDoc(doc(db, "users", deletingUser.id));
+                await db.collection("users").doc(deletingUser.id).delete();
                 // IMPORTANT: Deleting a user from Firebase Auth requires admin privileges
                 // and should be handled by a secure backend function (e.g., Cloud Function).
                 // This frontend-only action only removes them from the app's user list.
