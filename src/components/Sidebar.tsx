@@ -1,10 +1,10 @@
+
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Page } from '../types';
 import { DashboardIcon, ProjectsIcon, CalendarIcon, ClientsIcon, UsersIcon, MoodboardIcon, AiIcon, SettingsIcon, LogoutIcon, PomodoroIcon, TeamIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from '../constants';
 import AiAssistant from './AiAssistant';
 import { auth } from '../services/firebase';
-import { signOut } from 'firebase/auth';
 
 interface NavItemProps {
     icon: React.ReactNode;
@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onLinkClick }) => {
     ];
     
     const handleLogout = () => {
-        signOut(auth).catch(error => {
+        auth.signOut().catch(error => {
             console.error("Logout Error:", error);
         });
     }
