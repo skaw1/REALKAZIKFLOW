@@ -1,9 +1,8 @@
 
+
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Page, User, Notification, Project, Client, CalendarEvent, MoodboardItem, FooterSettings, SocialLink, ContentCalendarEntry, CollaborationSpace, SentEmail } from '../types';
 import { auth, db } from '../services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 
 type Theme = 'light' | 'dark';
 
@@ -92,12 +91,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [activeMoodboardProjectId, setActiveMoodboardProjectId] = useState<string | null>(null);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
             if (firebaseUser) {
                 // User is signed in, now get their profile from Firestore
-                const userDocRef = doc(db, 'users', firebaseUser.uid);
-                const unsubProfile = onSnapshot(userDocRef, (doc) => {
-                    if (doc.exists()) {
+                const userDocRef = db.collection('users').doc(firebaseUser.uid);
+                const unsubProfile = userDocRef.onSnapshot((doc) => {
+                    if (doc.exists) {
                         const userData = { ...doc.data(), id: doc.id } as User;
                         setUser(userData);
                         setCredits(userData.productivityScore || 0);
@@ -138,28 +137,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             let q;
 
             // Users listener (admins see all, others see themselves)
-            q = isAdmin ? collection(db, 'users') : query(collection(db, 'users'), where('id', '==', user.id));
-            const unsubUsers = onSnapshot(q, (snapshot) => setUsers(snapshot.docs.map(doc => ({...doc.data(), id: doc.id} as User))));
+            q = isAdmin ? db.collection('users') : db.collection('users').where('id', '==', user.id);
+            const unsubUsers = q.onSnapshot((snapshot) => setUsers(snapshot.docs.map(doc => ({...doc.data(), id: doc.id} as User))));
 
             // Projects listener (admins see all, others see their own/team projects)
-            q = isAdmin ? collection(db, 'projects') : query(collection(db, 'projects'), where('ownerId', '==', user.id));
-            const unsubProjects = onSnapshot(q, (snapshot) => setProjects(snapshot.docs.map(doc => {
+            q = isAdmin ? db.collection('projects') : db.collection('projects').where('ownerId', '==', user.id);
+            const unsubProjects = q.onSnapshot((snapshot) => setProjects(snapshot.docs.map(doc => {
                 const data = doc.data();
                 const deadline = data.deadline;
                 return { ...data, id: doc.id, deadline: deadline?.toDate ? deadline.toDate() : deadline } as Project;
             })));
             
             // Clients listener (Admins see all)
-            q = isAdmin ? collection(db, 'clients') : query(collection(db, 'clients'), where('ownerId', '==', user.id));
-            const unsubClients = onSnapshot(q, (snapshot) => setClients(snapshot.docs.map(doc => {
+            q = isAdmin ? db.collection('clients') : db.collection('clients').where('ownerId', '==', user.id);
+            const unsubClients = q.onSnapshot((snapshot) => setClients(snapshot.docs.map(doc => {
                  const data = doc.data();
                  const createdAt = data.createdAt;
                  return { ...data, id: doc.id, createdAt: createdAt?.toDate ? createdAt.toDate() : createdAt } as Client;
             })));
             
             // Events listener
-            q = isAdmin ? collection(db, 'events') : query(collection(db, 'events'), where('ownerId', '==', user.id));
-            const unsubEvents = onSnapshot(q, (snapshot) => setEvents(snapshot.docs.map(doc => {
+            q = isAdmin ? db.collection('events') : db.collection('events').where('ownerId', '==', user.id);
+            const unsubEvents = q.onSnapshot((snapshot) => setEvents(snapshot.docs.map(doc => {
                 const data = doc.data();
                 const start = data.start;
                 const end = data.end;
@@ -167,19 +166,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             })));
             
             // Content Entries listener
-            q = isAdmin ? collection(db, 'contentEntries') : query(collection(db, 'contentEntries'), where('ownerId', '==', user.id));
-            const unsubContent = onSnapshot(q, (snapshot) => setContentEntries(snapshot.docs.map(doc => {
+            q = isAdmin ? db.collection('contentEntries') : db.collection('contentEntries').where('ownerId', '==', user.id);
+            const unsubContent = q.onSnapshot((snapshot) => setContentEntries(snapshot.docs.map(doc => {
                 const data = doc.data();
                 const publishDate = data.publishDate;
                 return { ...data, id: doc.id, publishDate: publishDate?.toDate ? publishDate.toDate() : publishDate } as ContentCalendarEntry;
             })));
             
             // Notifications (Simplified for now, real app would be user-specific)
-            const unsubNotifications = onSnapshot(collection(db, 'notifications'), (snapshot) => setNotifications(snapshot.docs.map(doc => ({...doc.data(), id: doc.id} as Notification))));
+            const unsubNotifications = db.collection('notifications').onSnapshot((snapshot) => setNotifications(snapshot.docs.map(doc => ({...doc.data(), id: doc.id} as Notification))));
             
             // Sent Emails (Admins see all)
             if(isAdmin) {
-                const unsubSentEmails = onSnapshot(collection(db, 'sentEmails'), (snapshot) => setSentEmails(snapshot.docs.map(doc => {
+                const unsubSentEmails = db.collection('sentEmails').onSnapshot((snapshot) => setSentEmails(snapshot.docs.map(doc => {
                     const data = doc.data();
                     const timestamp = data.timestamp;
                     return { ...data, id: doc.id, timestamp: timestamp?.toDate ? timestamp.toDate() : timestamp } as SentEmail;
