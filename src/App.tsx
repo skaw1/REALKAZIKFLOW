@@ -98,8 +98,13 @@ const AppContent: React.FC = () => {
                              timestamp: new Date(),
                              read: false,
                          };
-                         // In a real app, you might want to check for duplicates before adding.
-                         await db.collection("sentEmails").add(newEmail);
+                         // Add console log to check the 'db' object
+                         console.log("Firestore 'db' object before collection call:", db);
+                         if (db && typeof db.collection === 'function') {
+                           await db.collection("sentEmails").add(newEmail);
+                         } else {
+                           console.error("Firestore 'db' object is not valid or collection method is missing.");
+                         }
                      });
                  }
                  return true;
