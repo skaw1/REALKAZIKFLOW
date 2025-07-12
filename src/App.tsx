@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useCallback, useState } from 'react';
 import { AppProvider, useAppContext, useTheme } from './context/AppContext';
 import { LoginPage } from './pages/LoginPage';
@@ -7,9 +8,7 @@ import { SentEmail, User } from './types';
 import SharedProjectPage from './pages/SharedProjectPage';
 import WelcomePage from './pages/WelcomePage';
 import { generateLoginAlertEmail } from './services/geminiService';
-import { auth } from './services/firebase';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from './services/firebase';
+import { auth, db } from './services/firebase';
 
 const hexToHslString = (hex: string): string => {
     hex = hex.replace('#', '');
@@ -100,7 +99,7 @@ const AppContent: React.FC = () => {
                              read: false,
                          };
                          // In a real app, you might want to check for duplicates before adding.
-                         await addDoc(collection(db, "sentEmails"), newEmail);
+                         await db.collection("sentEmails").add(newEmail);
                      });
                  }
                  return true;
