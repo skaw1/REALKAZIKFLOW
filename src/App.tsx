@@ -6,8 +6,8 @@ import { SentEmail, User } from './types';
 import SharedProjectPage from './pages/SharedProjectPage';
 import WelcomePage from './pages/WelcomePage';
 import { generateLoginAlertEmail } from './services/geminiService';
-import { auth, db } from './services/firebase'; // Assuming './services/firebase' is your Firebase init file
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth'; // <-- ADD THIS IMPORT
+import { auth, db, setupAuth } from './services/firebase'; // <-- Import setupAuth
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 
 const hexToHslString = (hex: string): string => {
     hex = hex.replace('#', '');
@@ -49,14 +49,24 @@ const AppContent: React.FC = () => {
     const [isWelcomePhase, setIsWelcomePhase] = useState(true);
     const [isWelcomePageExiting, setIsWelcomePageExiting] = useState(false);
 
+    // This useEffect will call setupAuth to initialize Firebase services
     useEffect(() => {
+        // Call setupAuth to ensure Firebase auth and db instances are initialized
+        setupAuth().then(() => {
+            console.log("Firebase setupAuth completed.");
+            // You might want to add onAuthStateChanged listener here if not already in AppContext
+            // For now, assuming AppContext handles auth state changes after initial setup.
+        }).catch(error => {
+            console.error("Error during Firebase setupAuth:", error);
+        });
+
         const exitTimer = setTimeout(() => setIsWelcomePageExiting(true), 2500);
         const phaseTimer = setTimeout(() => setIsWelcomePhase(false), 3000);
         return () => {
             clearTimeout(exitTimer);
             clearTimeout(phaseTimer);
         };
-    }, []);
+    }, []); // Empty dependency array ensures this runs once on mount
 
     useEffect(() => {
         const onLocationChange = () => setPath(window.location.pathname);
@@ -103,7 +113,8 @@ const AppContent: React.FC = () => {
                          if (db && typeof db.collection === 'function') {
                            await db.collection("sentEmails").add(newEmail);
                          } else {
-                           console.error("Firestore 'db' object is not valid or collection method is missing.");
+                           console.error("Firestore 'db' object is not valid or collection method is missing. Cannot add email.");
+                           // Optionally, handle this error more gracefully in UI
                          }
                      });
                  }
